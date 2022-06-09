@@ -30,11 +30,7 @@ class RetinalMatch {
 
     public static Mat imagePipeline(Mat image) {
         // Create kernel
-        Mat kernel = Mat.ones(3, 3, CvType.CV_8UC1);
-        kernel.put(-1, -1, 0);
-        kernel.put(-1, +1, 0);
-        kernel.put(+1, -1, 0);
-        kernel.put(+1, +1, 0);
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(3, 3));
 
         // Use green colour channel
         ArrayList<Mat> channels = new ArrayList<>();
@@ -45,9 +41,12 @@ class RetinalMatch {
         int newSize = 2;
         Imgproc.resize(image, image, new Size(image.width() / newSize, image.height() / newSize));
 
+        // Blur
+        Imgproc.GaussianBlur(image, image, new Size(7, 7), 5);
+
         // Adaptive Threshold
         Imgproc.adaptiveThreshold(image, image, 255,
-                Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 11, 3);
+                Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 33, 2);
 
         // Opening and Closing
         Imgproc.morphologyEx(image, image, Imgproc.MORPH_CLOSE, kernel);
