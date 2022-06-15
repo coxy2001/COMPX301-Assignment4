@@ -11,14 +11,18 @@ public class RetinalTester {
                     for (int p2 = p1; p2 <= MAX_PEOPLE; p2++) {
                         String image2 = "RIDB/IM00000" + i2 + "_" + p2 + ".jpg";
 
-                        System.out.println("Testing: " + i1 + "_" + p1 + " vs " + i2 + "_" + p2);
-                        if (p1 == p2)
-                            System.out.print("Expected: 1, ");
-                        else
-                            System.out.print("Expected: 0, ");
-
                         String[] arg = new String[] { image1, image2 };
-                        RetinalMatch.release_main(arg);
+                        int result = RetinalMatch.release_main(arg);
+                        int expected = 0;
+
+                        if (p1 == p2)
+                            expected = 1;
+
+                        System.out.println("Testing: " + i1 + "_" + p1 + " vs " + i2 + "_" + p2);
+                        if (result == expected)
+                            System.out.println("Correct");
+                        else
+                            System.out.println("Incorrect!! Expected: " + expected + " Got: " + result);
                     }
                 }
             }
