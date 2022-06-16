@@ -40,7 +40,7 @@ class RetinalMatch {
     public static int test_main(String[] args) {
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
         Mat image1 = Imgcodecs.imread("RIDB/IM000001_1.JPG");
-        Mat image2 = Imgcodecs.imread("RIDB/IM000001_1.JPG");
+        Mat image2 = Imgcodecs.imread("RIDB/IM000001_5.JPG");
 
         double similarity = imageCompare(image1, image2);
         double brightDiff = differenceBrightSpot(image1, image2);
@@ -113,13 +113,34 @@ class RetinalMatch {
 
     // Return location of bright spot
     public static Point locationBrightSpot(Mat image) {
-        // TODO: Convert to black and white, threshold brightspot, erode image, get centre of spot
-        return new Point(0, 0);
+        Imgproc.cvtColor(image, image, Imgproc.COLOR_RGB2GRAY);
+        Imgproc.equalizeHist(image, image);
+        Imgproc.threshold(image, image, 250, 255 ,0);
+        Imgproc.erode(image, image, Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(40, 40)));
+        Mat wLocMat = Mat.zeros(image.size(), image.channels()); 
+        Core.findNonZero(image, wLocMat);
+        int xSum = 0;
+        int ySum = 0;
+
+        for (int i=0; i<wLocMat.rows(); i++){
+            for (int j=0; j<2; j++){
+                if (j == 0){
+                    xSum += (int)wLocMat.get(i, 0)[j];
+                }
+                else{
+                    ySum += (int)wLocMat.get(i, 0)[j];
+                }
+            }
+        }
+        int xAvg = xSum / wLocMat.rows();
+        int yAvg = ySum / wLocMat.rows();        
+        return new Point(xAvg, yAvg);
     }
 
     // Return location of dark spot
     public static Point locationDarkSpot(Mat image) {
         // TODO: Convert to black and white, threshold darkspot, erode image, get centre of spot
+        //Imgcodecs.imwrite("out.jpg", image);
         return new Point(0, 0);
     }
 
