@@ -59,7 +59,7 @@ public class RetinalTester {
                     if (p1 == p2)
                         expected = 1;
 
-                    System.out.println("Testing: " + i1 + "_" + p1 + " vs " + i2 + "_" + p2);
+                    System.out.print("Testing: " + i1 + "_" + p1 + " vs " + i2 + "_" + p2 + " - ");
                     if (result == expected)
                         System.out.println("Correct");
                     else

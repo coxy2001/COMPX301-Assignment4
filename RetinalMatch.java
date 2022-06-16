@@ -30,7 +30,7 @@ class RetinalMatch {
         Mat image1 = Imgcodecs.imread(args[0]);
         Mat image2 = Imgcodecs.imread(args[1]);
 
-        double similarity = imageCompare(image1, image2);
+        double similarity = similarityVeins(image1, image2);
         double brightDiff = differenceBrightSpot(image1, image2);
         double darkDiff = differenceDarkSpot(image1, image2);
 
@@ -42,7 +42,7 @@ class RetinalMatch {
         Mat image1 = Imgcodecs.imread("RIDB/IM000001_1.JPG");
         Mat image2 = Imgcodecs.imread("RIDB/IM000001_5.JPG");
 
-        double similarity = imageCompare(image1, image2);
+        double similarity = similarityVeins(image1, image2);
         double brightDiff = differenceBrightSpot(image1, image2);
         double darkDiff = differenceDarkSpot(image1, image2);
 
@@ -54,7 +54,7 @@ class RetinalMatch {
     }
 
     // Return binary image showing the retina veins 
-    private static Mat imagePipeline(Mat image) {
+    private static Mat maskVeins(Mat image) {
         // Use green colour channel
         ArrayList<Mat> channels = new ArrayList<>();
         Core.split(image, channels);
@@ -85,18 +85,21 @@ class RetinalMatch {
     }
 
     // Return similarity of images
-    public static double imageCompare(Mat image1, Mat image2) {
+    public static double similarityVeins(Mat image1, Mat image2) {
+        // Get keypoints from both images using SIFT
         SIFT sift = SIFT.create();
         Mat descriptors1 = new Mat();
         Mat descriptors2 = new Mat();
         MatOfKeyPoint keyPoints1 = new MatOfKeyPoint();
         MatOfKeyPoint keyPoints2 = new MatOfKeyPoint();
-        sift.detectAndCompute(imagePipeline(image1), new Mat(), keyPoints1, descriptors1, false);
-        sift.detectAndCompute(imagePipeline(image2), new Mat(), keyPoints2, descriptors2, false);
+        sift.detectAndCompute(maskVeins(image1), new Mat(), keyPoints1, descriptors1, false);
+        sift.detectAndCompute(maskVeins(image2), new Mat(), keyPoints2, descriptors2, false);
 
+        // Find keypoint matches
         ArrayList<MatOfDMatch> matches = new ArrayList<MatOfDMatch>();
         BFMatcher.create().knnMatch(descriptors1, descriptors2, matches, 2);
 
+        // Find good keypoint matches
         ArrayList<DMatch> goodMatches = new ArrayList<>();
         var matchesIter = matches.iterator();
         while (matchesIter.hasNext()) {
@@ -105,35 +108,44 @@ class RetinalMatch {
             DMatch n = match.get(1);
             if (m.distance < 0.75 * n.distance)
                 goodMatches.add(m);
-
         }
 
+        // Return similarity. Good matches divided total matches
         return (double) goodMatches.size() / (double) matches.size();
     }
 
     // Return location of bright spot
-    public static Point locationBrightSpot(Mat image) {
+    private static Point locationBrightSpot(Mat image) {
         Imgproc.cvtColor(image, image, Imgproc.COLOR_RGB2GRAY);
         Imgproc.equalizeHist(image, image);
-        Imgproc.threshold(image, image, 250, 255 ,0);
-        Imgproc.erode(image, image, Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(40, 40)));
-        Mat wLocMat = Mat.zeros(image.size(), image.channels()); 
+        Imgproc.threshold(image, image, 250, 255, 0);
+
+        Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(40, 40));
+        Imgproc.erode(image, image, kernel);
+
+        Mat wLocMat = Mat.zeros(image.size(), image.channels());
         Core.findNonZero(image, wLocMat);
+
+        // Return point in centre if the bright spot can't be found
+        if (wLocMat.rows() == 0)
+            // TODO: Redo threshold with smaller value to get bright spot. No brightspot: 4_8
+            return new Point(image.width(), image.height());
+
         int xSum = 0;
         int ySum = 0;
-
-        for (int i=0; i<wLocMat.rows(); i++){
-            for (int j=0; j<2; j++){
-                if (j == 0){
-                    xSum += (int)wLocMat.get(i, 0)[j];
-                }
-                else{
-                    ySum += (int)wLocMat.get(i, 0)[j];
+        for (int i = 0; i < wLocMat.rows(); i++) {
+            for (int j = 0; j < 2; j++) {
+                if (j == 0) {
+                    xSum += (int) wLocMat.get(i, 0)[j];
+                } else {
+                    ySum += (int) wLocMat.get(i, 0)[j];
                 }
             }
         }
+
         int xAvg = xSum / wLocMat.rows();
-        int yAvg = ySum / wLocMat.rows();        
+        int yAvg = ySum / wLocMat.rows();
+
         return new Point(xAvg, yAvg);
     }
 
@@ -163,7 +175,11 @@ class RetinalMatch {
 
     // Determine match with image similarity, bright spot distance, and dark spot distance
     public static int isMatch(double similarity, double brightDiff, double darkDiff) {
-        if (similarity > 0.10 && brightDiff < 99 && darkDiff < 99)
+        if (similarity > 0.12)
+            return 1;
+        if (similarity > 0.11 && (brightDiff < 199 && darkDiff < 20)) // TODO: Test && vs ||
+            return 1;
+        if (similarity > 0.105 && brightDiff < 99 && darkDiff < 10)
             return 1;
         return 0;
     }
