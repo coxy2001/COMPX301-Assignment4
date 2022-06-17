@@ -124,20 +124,21 @@ class RetinalMatch {
 
     // Return location of bright spot
     private static Point locationBrightSpot(Mat image) {
-        Imgproc.cvtColor(image, image, Imgproc.COLOR_RGB2GRAY);
-        Imgproc.equalizeHist(image, image);
-        Imgproc.threshold(image, image, 250, 255, 0);
+        Mat temp = new Mat();
+        Imgproc.cvtColor(image, temp, Imgproc.COLOR_RGB2GRAY);
+        Imgproc.equalizeHist(temp, temp);
+        Imgproc.threshold(temp, temp, 250, 255, 0);
 
         Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(40, 40));
-        Imgproc.erode(image, image, kernel);
+        Imgproc.erode(temp, temp, kernel);
 
-        Mat wLocMat = Mat.zeros(image.size(), image.channels());
-        Core.findNonZero(image, wLocMat);
+        Mat wLocMat = Mat.zeros(temp.size(), temp.channels());
+        Core.findNonZero(temp, wLocMat);
 
         // Return point in centre if the bright spot can't be found
         if (wLocMat.rows() == 0)
             // TODO: Redo threshold with smaller value to get bright spot. No brightspot: 4_8
-            return new Point(image.width(), image.height());
+            return new Point(temp.width() / 2, temp.height() / 2);
 
         int xSum = 0;
         int ySum = 0;
@@ -158,43 +159,40 @@ class RetinalMatch {
     }
 
     // Return location of dark spot
-    public static Point locationDarkSpot(Mat image) {
+    private static Point locationDarkSpot(Mat image) {
         // TODO: Convert to black and white, threshold darkspot, erode image, get centre of spot
         Mat temp = new Mat();
         Imgproc.cvtColor(image, temp, Imgproc.COLOR_RGB2GRAY);
         Imgproc.equalizeHist(temp, temp);
         Imgproc.blur(temp, temp, new Size(15, 15));
-        Imgproc.threshold(temp, temp, 60, 255 ,0);
+        Imgproc.threshold(temp, temp, 60, 255, 0);
         Imgproc.threshold(temp, temp, 30, 255, Imgproc.THRESH_BINARY_INV);
-        Mat wLocMat = Mat.zeros(temp.size(), temp.channels()); 
+        Mat wLocMat = Mat.zeros(temp.size(), temp.channels());
         Core.findNonZero(temp, wLocMat);
         int xSum = 0;
         int xCount = 0;
         int ySum = 0;
         int yCount = 0;
 
-        for (int i=0; i<wLocMat.rows(); i++){
-            if ((int)wLocMat.get(i, 0)[0] > 600 
-                    && (int)wLocMat.get(i, 0)[0] < 800
-                    && (int)wLocMat.get(i, 0)[1] > 350 
-                    && (int)wLocMat.get(i, 0)[1] < 650){
-                        xSum += (int)wLocMat.get(i, 0)[0];
-                        xCount += 1;
-                        ySum += (int)wLocMat.get(i, 0)[1];
-                        yCount += 1;
-                    }
+        for (int i = 0; i < wLocMat.rows(); i++) {
+            if (wLocMat.get(i, 0)[0] > 600
+                    && (int) wLocMat.get(i, 0)[0] < 800
+                    && (int) wLocMat.get(i, 0)[1] > 350
+                    && (int) wLocMat.get(i, 0)[1] < 650) {
+                xSum += (int) wLocMat.get(i, 0)[0];
+                xCount += 1;
+                ySum += (int) wLocMat.get(i, 0)[1];
+                yCount += 1;
+            }
         }
-        Imgcodecs.imwrite("out.jpg", temp);
-        if (xCount > 0 && yCount > 0){
+
+        if (xCount > 0 && yCount > 0) {
             int xAvg = xSum / xCount;
-            int yAvg = ySum / yCount; 
-            System.out.println(xAvg + " " + yAvg);
+            int yAvg = ySum / yCount;
             return new Point(xAvg, yAvg);
-        }
-        else {
-            System.out.println("No dark spot found");
+        } else {
             return new Point(image.width() / 2, image.height() / 2);
-        }      
+        }
     }
 
     // Calculate distance between two points
