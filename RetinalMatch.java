@@ -2,7 +2,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.opencv.core.Core;
-import org.opencv.core.CvType;
 import org.opencv.core.DMatch;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDMatch;
@@ -44,13 +43,13 @@ class RetinalMatch {
 
         double similarity = similarityVeins(image1, image2);
         double brightDiff = differenceBrightSpot(image1, image2);
-        double darkDiff = differenceDarkSpot(image1, image2);
+        // double darkDiff = differenceDarkSpot(image1, image2);
 
         System.out.println(similarity);
         System.out.println(brightDiff);
-        System.out.println(darkDiff);
+        // System.out.println(darkDiff);
 
-        return isMatch(similarity, brightDiff, darkDiff);
+        return isMatch(similarity, brightDiff, 0);
     }
 
     // Return binary image showing the retina veins 
@@ -137,7 +136,6 @@ class RetinalMatch {
 
         // Return point in centre if the bright spot can't be found
         if (wLocMat.rows() == 0)
-            // TODO: Redo threshold with smaller value to get bright spot. No brightspot: 4_8
             return new Point(temp.width() / 2, temp.height() / 2);
 
         int xSum = 0;
@@ -160,7 +158,6 @@ class RetinalMatch {
 
     // Return location of dark spot
     private static Point locationDarkSpot(Mat image) {
-        // TODO: Convert to black and white, threshold darkspot, erode image, get centre of spot
         Mat temp = new Mat();
         Imgproc.cvtColor(image, temp, Imgproc.COLOR_RGB2GRAY);
         Imgproc.equalizeHist(temp, temp);
@@ -216,9 +213,9 @@ class RetinalMatch {
     public static int isMatch(double similarity, double brightDiff, double darkDiff) {
         if (similarity > 0.115)
             return 1;
-        if (similarity > 0.11 && (brightDiff < 199 && darkDiff < 20)) // TODO: Test && vs ||
+        if (similarity > 0.11 && brightDiff < 199)
             return 1;
-        if (similarity > 0.105 && brightDiff < 99 && darkDiff < 10)
+        if (similarity > 0.105 && brightDiff < 99)
             return 1;
         return 0;
     }
