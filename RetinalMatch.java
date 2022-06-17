@@ -65,21 +65,21 @@ class RetinalMatch {
         Imgproc.resize(image, image, new Size(image.width() / newSize, image.height() / newSize));
 
         // Blur
-        Imgproc.GaussianBlur(image, image, new Size(7, 7), 5);
+        Imgproc.GaussianBlur(image, image, new Size(7, 7), 7);
 
         // Adaptive Threshold
         Imgproc.adaptiveThreshold(image, image, 255,
-                Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY, 33, 2);
+                Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C, Imgproc.THRESH_BINARY_INV, 33, 2);
 
         // Remove border
-        Imgproc.floodFill(image, new Mat(), new Point(240, 25), new Scalar(255));
+        Imgproc.floodFill(image, new Mat(), new Point(240, 25), new Scalar(0));
 
         // Create kernel
         Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(3, 3));
 
         // Opening and Closing
-        Imgproc.morphologyEx(image, image, Imgproc.MORPH_CLOSE, kernel);
         Imgproc.morphologyEx(image, image, Imgproc.MORPH_OPEN, kernel);
+        Imgproc.morphologyEx(image, image, Imgproc.MORPH_CLOSE, kernel);
 
         return image;
     }
@@ -95,9 +95,17 @@ class RetinalMatch {
         sift.detectAndCompute(maskVeins(image1), new Mat(), keyPoints1, descriptors1, false);
         sift.detectAndCompute(maskVeins(image2), new Mat(), keyPoints2, descriptors2, false);
 
+        // Set query to smallest set of descriptors and train to the largest set
+        Mat query = descriptors1;
+        Mat train = descriptors2;
+        if (descriptors1.size().height > descriptors2.size().height) {
+            query = descriptors2;
+            train = descriptors1;
+        }
+
         // Find keypoint matches
         ArrayList<MatOfDMatch> matches = new ArrayList<MatOfDMatch>();
-        BFMatcher.create().knnMatch(descriptors1, descriptors2, matches, 2);
+        BFMatcher.create().knnMatch(query, train, matches, 2);
 
         // Find good keypoint matches
         ArrayList<DMatch> goodMatches = new ArrayList<>();
@@ -175,7 +183,7 @@ class RetinalMatch {
 
     // Determine match with image similarity, bright spot distance, and dark spot distance
     public static int isMatch(double similarity, double brightDiff, double darkDiff) {
-        if (similarity > 0.12)
+        if (similarity > 0.115)
             return 1;
         if (similarity > 0.11 && (brightDiff < 199 && darkDiff < 20)) // TODO: Test && vs ||
             return 1;
