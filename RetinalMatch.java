@@ -123,14 +123,16 @@ class RetinalMatch {
 
     // Return location of bright spot
     private static Point locationBrightSpot(Mat image) {
+        // Change image to grayscale and threshold out the bright spot
         Mat temp = new Mat();
         Imgproc.cvtColor(image, temp, Imgproc.COLOR_RGB2GRAY);
         Imgproc.equalizeHist(temp, temp);
         Imgproc.threshold(temp, temp, 250, 255, 0);
 
+        // Reduce the noise of small bright spots via erosion
         Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(40, 40));
         Imgproc.erode(temp, temp, kernel);
-
+        //Locate the white pixels of the bright spot
         Mat wLocMat = Mat.zeros(temp.size(), temp.channels());
         Core.findNonZero(temp, wLocMat);
 
@@ -138,6 +140,7 @@ class RetinalMatch {
         if (wLocMat.rows() == 0)
             return new Point(temp.width() / 2, temp.height() / 2);
 
+        // Calculate the 'centre' of the bright spot
         int xSum = 0;
         int ySum = 0;
         for (int i = 0; i < wLocMat.rows(); i++) {
@@ -149,15 +152,17 @@ class RetinalMatch {
                 }
             }
         }
-
         int xAvg = xSum / wLocMat.rows();
         int yAvg = ySum / wLocMat.rows();
 
+        // Return centre of bright spot
         return new Point(xAvg, yAvg);
     }
 
     // Return location of dark spot
     private static Point locationDarkSpot(Mat image) {
+        // Change the image to grayscale, then threshold out the dark spot, 
+        // invert the colours to set dark spot to white
         Mat temp = new Mat();
         Imgproc.cvtColor(image, temp, Imgproc.COLOR_RGB2GRAY);
         Imgproc.equalizeHist(temp, temp);
@@ -171,6 +176,7 @@ class RetinalMatch {
         int ySum = 0;
         int yCount = 0;
 
+        // Calculate the 'centre' of the dark spot using data from centre section of image
         for (int i = 0; i < wLocMat.rows(); i++) {
             if (wLocMat.get(i, 0)[0] > 600
                     && (int) wLocMat.get(i, 0)[0] < 800
@@ -183,6 +189,8 @@ class RetinalMatch {
             }
         }
 
+        // If a dark spot is found, return the centre of the spot,
+        // else return centre of image if dark spot not found 
         if (xCount > 0 && yCount > 0) {
             int xAvg = xSum / xCount;
             int yAvg = ySum / yCount;
