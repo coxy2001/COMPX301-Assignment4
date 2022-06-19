@@ -11,12 +11,13 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.features2d.BFMatcher;
 import org.opencv.features2d.SIFT;
+import org.opencv.features2d.KAZE;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 class RetinalMatch {
     public static void main(String[] args) {
-        System.out.println(compareImages(args));
+        System.out.println(compareImagesTesting(args));
     }
 
     public static int compareImages(String[] args) {
@@ -86,7 +87,8 @@ class RetinalMatch {
     // Return similarity of images
     public static double similarityVeins(Mat image1, Mat image2) {
         // Get keypoints from both images using SIFT
-        SIFT sift = SIFT.create();
+        // SIFT sift = SIFT.create();
+        var sift = KAZE.create();
         Mat descriptors1 = new Mat();
         Mat descriptors2 = new Mat();
         MatOfKeyPoint keyPoints1 = new MatOfKeyPoint();
