@@ -14,8 +14,9 @@ public class RetinalTester {
             for (int p1 = 1; p1 <= MAX_PEOPLE; p1++) {
                 String image1 = "RIDB/IM00000" + i1 + "_" + p1 + ".jpg";
                 System.out.println("Testing: " + i1 + "_" + p1);
+                int p2 = p1 + 1;
                 for (int i2 = i1; i2 <= MAX_IMAGE; i2++) {
-                    for (int p2 = p1; p2 <= MAX_PEOPLE; p2++) {
+                    for (; p2 <= MAX_PEOPLE; p2++) {
                         String image2 = "RIDB/IM00000" + i2 + "_" + p2 + ".jpg";
 
                         String[] arg = new String[] { image1, image2 };
@@ -32,6 +33,7 @@ public class RetinalTester {
                         }
                         tests++;
                     }
+                    p2 = 1;
                 }
             }
         }
