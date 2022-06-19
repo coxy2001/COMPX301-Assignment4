@@ -16,10 +16,10 @@ import org.opencv.imgproc.Imgproc;
 
 class RetinalMatch {
     public static void main(String[] args) {
-        System.out.println(test_main(args));
+        System.out.println(compareImages(args));
     }
 
-    public static int release_main(String[] args) {
+    public static int compareImages(String[] args) {
         if (args.length != 2) {
             System.err.println("Needs two arguments");
             return -1;
@@ -31,15 +31,15 @@ class RetinalMatch {
 
         double similarity = similarityVeins(image1, image2);
         double brightDiff = differenceBrightSpot(image1, image2);
-        double darkDiff = differenceDarkSpot(image1, image2);
+        // double darkDiff = differenceDarkSpot(image1, image2);
 
-        return isMatch(similarity, brightDiff, darkDiff);
+        return isMatch(similarity, brightDiff, 0);
     }
 
-    public static int test_main(String[] args) {
+    public static int compareImagesTesting(String[] args) {
         System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
         Mat image1 = Imgcodecs.imread("RIDB/IM000001_1.JPG");
-        Mat image2 = Imgcodecs.imread("RIDB/IM000001_5.JPG");
+        Mat image2 = Imgcodecs.imread("RIDB/IM000002_1.JPG");
 
         double similarity = similarityVeins(image1, image2);
         double brightDiff = differenceBrightSpot(image1, image2);
@@ -132,7 +132,8 @@ class RetinalMatch {
         // Reduce the noise of small bright spots via erosion
         Mat kernel = Imgproc.getStructuringElement(Imgproc.MORPH_ELLIPSE, new Size(40, 40));
         Imgproc.erode(temp, temp, kernel);
-        //Locate the white pixels of the bright spot
+
+        // Locate the white pixels of the bright spot
         Mat wLocMat = Mat.zeros(temp.size(), temp.channels());
         Core.findNonZero(temp, wLocMat);
 
@@ -169,8 +170,10 @@ class RetinalMatch {
         Imgproc.blur(temp, temp, new Size(15, 15));
         Imgproc.threshold(temp, temp, 60, 255, 0);
         Imgproc.threshold(temp, temp, 30, 255, Imgproc.THRESH_BINARY_INV);
+
         Mat wLocMat = Mat.zeros(temp.size(), temp.channels());
         Core.findNonZero(temp, wLocMat);
+
         int xSum = 0;
         int xCount = 0;
         int ySum = 0;
